@@ -8,6 +8,8 @@ import math
 import random
 import sys
 
+import wandb
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -160,6 +162,14 @@ def train_one_epoch(
                     f"\tBpp loss: {out_criterion['bpp_loss'].item():.2f} |"
                     f"\tAux loss: {aux_loss.item():.2f}"
                 )
+                wandb.log(
+                    {
+                        "train_loss": out_criterion["loss"].item(),
+                        "train_mse_loss": out_criterion["mse_loss"].item(),
+                        "train_bpp_loss": out_criterion["bpp_loss"].item(),
+                        "train_aux_loss": aux_loss.item(),
+                    }
+                )
             else:
                 print(
                     f"Train epoch {epoch}: ["
@@ -169,6 +179,14 @@ def train_one_epoch(
                     f"\tMS_SSIM loss: {out_criterion['ms_ssim_loss'].item():.3f} |"
                     f"\tBpp loss: {out_criterion['bpp_loss'].item():.2f} |"
                     f"\tAux loss: {aux_loss.item():.2f}"
+                )
+                wandb.log(
+                    {
+                        "train_loss": out_criterion["loss"].item(),
+                        "train_ms_ssim_loss": out_criterion["ms_ssim_loss"].item(),
+                        "train_bpp_loss": out_criterion["bpp_loss"].item(),
+                        "train_aux_loss": aux_loss.item(),
+                    }
                 )
 
 
@@ -199,6 +217,15 @@ def test_epoch(epoch, test_dataloader, model, criterion, type="mse"):
             f"\tBpp loss: {bpp_loss.avg:.2f} |"
             f"\tAux loss: {aux_loss.avg:.2f}\n"
         )
+        wandb.log(
+            {
+                "test_loss": loss.avg,
+                "test_mse_loss": mse_loss.avg,
+                "test_bpp_loss": bpp_loss.avg,
+                "test_aux_loss": aux_loss.avg,
+                "epoch": epoch,
+            }
+        )
 
     else:
         loss = AverageMeter()
@@ -223,6 +250,15 @@ def test_epoch(epoch, test_dataloader, model, criterion, type="mse"):
             f"\tMS_SSIM loss: {ms_ssim_loss.avg:.3f} |"
             f"\tBpp loss: {bpp_loss.avg:.2f} |"
             f"\tAux loss: {aux_loss.avg:.2f}\n"
+        )
+        wandb.log(
+            {
+                "test_loss": loss.avg,
+                "test_ms_ssim_loss": ms_ssim_loss.avg,
+                "test_bpp_loss": bpp_loss.avg,
+                "test_aux_loss": aux_loss.avg,
+                "epoch": epoch,
+            }
         )
 
     return loss.avg
@@ -323,6 +359,18 @@ def parse_args(argv):
     )
     parser.add_argument("--lr_epoch", nargs="+", type=int)
     parser.add_argument("--continue_train", action="store_true", default=True)
+    parser.add_argument(
+        "--project",
+        type=str,
+        default="LALIC",
+        help="wandb project name",
+    )
+    parser.add_argument(
+        "--name",
+        type=str,
+        default=None,
+        help="wandb run name",
+    )
     args = parser.parse_args(argv)
     return args
 
@@ -340,6 +388,8 @@ def main(argv):
         torch.manual_seed(args.seed)
         random.seed(args.seed)
     writer = SummaryWriter(save_path + "tensorboard/")
+
+    wandb.init(project=args.project, name=args.name, config=args)
 
     train_transforms = transforms.Compose(
         [transforms.RandomCrop(args.patch_size), transforms.ToTensor()]
