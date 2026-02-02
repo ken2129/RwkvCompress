@@ -26,9 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements file first for better caching
 COPY requirements.txt /workspace/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir einops pytorch_msssim
+# Install Python dependencies (torch/torchvision are provided by the base image)
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire project
 COPY . /workspace/

@@ -40,7 +40,6 @@ def load_biwkv4():
             "--use_fast_math",
             "-O3",
             "-Xptxas -O3",
-            "-gencode arch=compute_86,code=sm_86",
         ],
     )
     return biwkv4_cuda
