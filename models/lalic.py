@@ -83,7 +83,10 @@ class BiWKV4(torch.autograd.Function):
 
 
 def RUN_BiWKV4(w, u, k, v):
-    return BiWKV4.apply(w.cuda(), u.cuda(), k.cuda(), v.cuda())
+    with torch.amp.autocast("cuda", enabled=False):
+        return BiWKV4.apply(
+            w.cuda().float(), u.cuda().float(), k.cuda().float(), v.cuda().float()
+        )
 
 
 class OmniShift(nn.Module):
@@ -441,6 +444,19 @@ class LALIC(Elic2022Official):
                 ),
             },
         )
+
+    def forward(self, x):
+        y = self.g_a(x)
+        # Protect latent_codec (entropy model) from AMP instability by forcing FP32
+        with torch.amp.autocast("cuda", enabled=False):
+            y_out = self.latent_codec(y.float())
+        y_hat = y_out["y_hat"]
+        # Allow g_s to run in AMP (or FP32 if y_hat stays FP32)
+        x_hat = self.g_s(y_hat)
+        return {
+            "x_hat": x_hat,
+            "likelihoods": y_out["likelihoods"],
+        }
 
     @classmethod
     def from_state_dict(cls, state_dict, strict=True):

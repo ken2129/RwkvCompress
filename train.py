@@ -415,7 +415,7 @@ def main(argv):
         print(arg, ":", getattr(args, arg))
     
     # Initialize Scaler for AMP
-    scaler = torch.amp.GradScaler("cuda", enabled=args.amp)
+    scaler = torch.amp.GradScaler("cuda", enabled=args.amp, init_scale=1024)
     type = args.type
     save_path = os.path.join(args.save_path, str(args.lmbda))
     if not os.path.exists(save_path):
