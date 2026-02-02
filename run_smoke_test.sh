@@ -23,6 +23,10 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
     --clip_max_norm 1.0 \
     --save \
     --project "SMOKE_TEST" \
-    --name "smoke_test_run"
+    --name "smoke_test_run" \
+    --amp \
+    --benchmark \
+    --no-deterministic \
+    --tf32
 
 echo "Smoke Test Completed."

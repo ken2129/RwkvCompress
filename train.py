@@ -25,8 +25,6 @@ from models import LALIC
 from torch.utils.tensorboard import SummaryWriter
 import os
 
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
 
 
 def compute_msssim(a, b):
@@ -129,7 +127,9 @@ def train_one_epoch(
     aux_optimizer,
     epoch,
     clip_max_norm,
+    scaler=None,
     type="mse",
+    amp=False,
 ):
     model.train()
     device = next(model.parameters()).device
@@ -139,14 +139,24 @@ def train_one_epoch(
         optimizer.zero_grad()
         aux_optimizer.zero_grad()
 
-        out_net = model(d)
+        with torch.amp.autocast("cuda", enabled=amp):
+            out_net = model(d)
+            out_criterion = criterion(out_net, d)
 
-        out_criterion = criterion(out_net, d)
-        out_criterion["loss"].backward()
-        if clip_max_norm > 0:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), clip_max_norm)
-        optimizer.step()
+        if scaler is not None:
+            scaler.scale(out_criterion["loss"]).backward()
+            if clip_max_norm > 0:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), clip_max_norm)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            out_criterion["loss"].backward()
+            if clip_max_norm > 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), clip_max_norm)
+            optimizer.step()
 
+        # Aux optimizer is usually kept in FP32
         aux_loss = model.aux_loss()
         aux_loss.backward()
         aux_optimizer.step()
@@ -371,14 +381,41 @@ def parse_args(argv):
         default=None,
         help="wandb run name",
     )
+    parser.add_argument("--amp", action="store_true", help="Enable AMP")
+    parser.add_argument(
+        "--benchmark", action="store_true", help="Enable cudnn benchmark"
+    )
+    parser.add_argument(
+        "--no-deterministic",
+        action="store_true",
+        help="Disable cudnn deterministic (Enable non-deterministic)",
+    )
+    parser.add_argument(
+        "--tf32", action="store_true", help="Enable cuda matmul/cudnn tf32"
+    )
     args = parser.parse_args(argv)
     return args
 
 
 def main(argv):
     args = parse_args(argv)
+
+    # Optimization settings
+    # Default (Original LALIC): benchmark=False, deterministic=True, tf32=False
+    torch.backends.cudnn.benchmark = args.benchmark
+    torch.backends.cudnn.deterministic = not args.no_deterministic
+    if args.tf32:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+    else:
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
+
     for arg in vars(args):
         print(arg, ":", getattr(args, arg))
+    
+    # Initialize Scaler for AMP
+    scaler = torch.amp.GradScaler("cuda", enabled=args.amp)
     type = args.type
     save_path = os.path.join(args.save_path, str(args.lmbda))
     if not os.path.exists(save_path):
@@ -462,7 +499,9 @@ def main(argv):
             aux_optimizer,
             epoch,
             args.clip_max_norm,
+            scaler,
             type,
+            args.amp,
         )
         loss = test_epoch(epoch, test_dataloader, net, criterion, type)
         writer.add_scalar("test_loss", loss, epoch)
