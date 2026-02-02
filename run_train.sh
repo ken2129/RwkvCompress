@@ -14,12 +14,12 @@
 # Save path: /workspace/uchishiba_data/experiments
 # Scheduling: None
 
-WANDB_PROJECT="LALIC"
-WANDB_RUN_NAME="test_run"
+WANDB_PROJECT="lalic-original"
+WANDB_RUN_NAME="0.0018"
 
 # Optimization Settings
 # Set to "true" to enable, "false" to disable
-USE_AMP="false"
+USE_AMP="true"
 USE_BENCHMARK="true"
 USE_DETERMINISTIC="false"
 USE_TF32="true"
@@ -47,6 +47,7 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
     --lambda 0.0018 \
     --epochs 150 \
     --learning-rate 1e-4 \
+    --lr_epoch 149 \
     --batch-size 8 \
     --patch-size 256 256 \
     --seed 100 \

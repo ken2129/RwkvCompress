@@ -130,3 +130,7 @@ dmypy.json
 .pyre/
 ./run.sh
 uchishiba_data/
+
+# WandB
+wandb/
+
