@@ -58,4 +58,6 @@ CUDA_VISIBLE_DEVICES=1 python train.py \
     --save \
     --project "${WANDB_PROJECT}" \
     --name "${WANDB_RUN_NAME}" \
+    --wandb_id "yrm5dugf" \
+    --checkpoint "/workspace/uchishiba_data/experiments/noise/0.0018checkpoint_latest.pth.tar" \
     $ARGS
