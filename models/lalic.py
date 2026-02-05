@@ -330,6 +330,7 @@ class LALIC(Elic2022Official):
         depths=[2, 4, 6, 6],
         groups=None,
         use_ckpt=False,
+        quantizer="ste",
         **kwargs,
     ):
         super().__init__(N=N, M=M, groups=groups, **kwargs)
@@ -418,7 +419,7 @@ class LALIC(Elic2022Official):
         scctx_latent_codec = {
             f"y{k}": CheckerboardLatentCodec(
                 latent_codec={
-                    "y": GaussianConditionalLatentCodec(quantizer="ste"),
+                    "y": GaussianConditionalLatentCodec(quantizer=quantizer),
                 },
                 context_prediction=spatial_context[k],
                 entropy_parameters=param_aggregation[k],
@@ -440,7 +441,7 @@ class LALIC(Elic2022Official):
                     entropy_bottleneck=EntropyBottleneck(N6),
                     h_a=self.h_a,
                     h_s=self.h_s,
-                    quantizer="ste",
+                    quantizer=quantizer,
                 ),
             },
         )

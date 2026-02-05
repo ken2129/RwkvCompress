@@ -360,6 +360,9 @@ def parse_args(argv):
     parser.add_argument(
         "--type", type=str, default="mse", help="loss type", choices=["mse", "ms-ssim"]
     )
+    parser.add_argument(
+        "--quantizer", type=str, default="ste", help="quantizer type", choices=["ste", "noise"]
+    )
     parser.add_argument("--save_path", type=str, help="save_path")
     parser.add_argument("--skip_epoch", type=int, default=0)
     parser.add_argument(
@@ -381,6 +384,12 @@ def parse_args(argv):
         default=None,
         help="wandb run name",
     )
+    parser.add_argument(
+        "--wandb_id",
+        type=str,
+        default=None,
+        help="wandb run id to resume",
+    )
     parser.add_argument("--amp", action="store_true", help="Enable AMP")
     parser.add_argument(
         "--benchmark", action="store_true", help="Enable cudnn benchmark"
@@ -399,6 +408,9 @@ def parse_args(argv):
 
 def main(argv):
     args = parse_args(argv)
+
+    if args.quantizer not in ["ste", "noise"]:
+        raise ValueError(f"Invalid quantizer mode: {args.quantizer}")
 
     # Optimization settings
     # Default (Original LALIC): benchmark=False, deterministic=True, tf32=False
@@ -426,7 +438,13 @@ def main(argv):
         random.seed(args.seed)
     writer = SummaryWriter(save_path + "tensorboard/")
 
-    wandb.init(project=args.project, name=args.name, config=args)
+    wandb.init(
+        project=args.project,
+        name=args.name,
+        id=args.wandb_id,
+        resume="allow",
+        config=args,
+    )
 
     train_transforms = transforms.Compose(
         [transforms.RandomCrop(args.patch_size), transforms.ToTensor()]
@@ -462,6 +480,7 @@ def main(argv):
     net = LALIC(
         dims=[96, 144, 256, 320, 256, 192],
         depths=[2, 4, 6, 6],
+        quantizer=args.quantizer,
     )
     net = net.to(device)
 
