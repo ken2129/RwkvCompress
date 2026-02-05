@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Training script for LALIC using flickr2k_lalic dataset (NOISE quantization mode)
+# Lambda: 0.067
 
 # Parameters:
 # Batch size: 8
@@ -8,15 +9,15 @@
 # Epochs: 150
 # Patch size: 256 256
 # Seed: 100
-# Lambda: 0.0018
+# Lambda: 0.067
 # Loss type: mse
 # Quantizer: noise
 # Dataset: /workspace/uchishiba_data/flickr2k_lalic
 # Save path: /workspace/uchishiba_data/experiments/noise
-# Scheduling: 149
+# Scheduling: None (1000)
 
 WANDB_PROJECT="lalic-original"
-WANDB_RUN_NAME="0.0018_noise"
+WANDB_RUN_NAME="0.067_noise"
 
 # Optimization Settings
 USE_AMP="true"
@@ -42,9 +43,10 @@ if [ "$USE_TF32" = "true" ]; then
     ARGS="$ARGS --tf32"
 fi
 
-CUDA_VISIBLE_DEVICES=1 python train.py \
+# CUDA_VISIBLE_DEVICES=0 to replace the STE run
+CUDA_VISIBLE_DEVICES=0 python train.py \
     -d /workspace/uchishiba_data/flickr2k_lalic \
-    --lambda 0.0018 \
+    --lambda 0.067 \
     --epochs 150 \
     --learning-rate 1e-4 \
     --lr_epoch 1000 \

@@ -423,6 +423,7 @@ class LALIC(Elic2022Official):
                 },
                 context_prediction=spatial_context[k],
                 entropy_parameters=param_aggregation[k],
+                forward_method="onepass" if quantizer == "noise" else "twopass",
             )
             for k in range(len(self.groups))
         }

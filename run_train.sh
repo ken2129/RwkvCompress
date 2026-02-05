@@ -47,7 +47,7 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
     --lambda 0.0018 \
     --epochs 150 \
     --learning-rate 1e-4 \
-    --lr_epoch 149 \
+    --lr_epoch 1000 \
     --batch-size 8 \
     --patch-size 256 256 \
     --seed 100 \
@@ -58,6 +58,4 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
     --save \
     --project "${WANDB_PROJECT}" \
     --name "${WANDB_RUN_NAME}" \
-    --wandb_id "81u4v9dr" \
-    --checkpoint "/workspace/uchishiba_data/experiments/0.0018checkpoint_latest.pth.tar" \
     $ARGS
