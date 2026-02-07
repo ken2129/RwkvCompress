@@ -134,3 +134,10 @@ uchishiba_data/
 # WandB
 wandb/
 
+datasets/
+
+# Experiments and checkpoints
+experiments/
+*.pth.tar
+*.pth
+*.pt
